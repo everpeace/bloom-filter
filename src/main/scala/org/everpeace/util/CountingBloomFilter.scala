@@ -33,8 +33,8 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * add an element from the filter.
    * @param elm is an elements you want to add.
    */
-  def add[E](elm: E)(implicit EtoBytes: E => Array[Byte]) = {
-    createHashes(EtoBytes(elm), k).foreach(filter(_) += 1)
+  def add[E <% Array[Byte]](elm: E) = {
+    createHashes(implicitly(elm), k).foreach(filter(_) += 1)
     numberOfContains += 1;
   }
 
@@ -42,14 +42,14 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * add all given elements from the filter.
    * @param elms is a set of elements you want to add.
    */
-  def addAll[E](elms: Set[E])(implicit EtoBytes: E => Array[Byte]) = elms.foreach(add(_))
+  def addAll[E <% Array[Byte]](elms: Set[E]) = elms.foreach(add(_))
 
   /**
    * discard an element from the filter.
    * @param elm is an elements you want to discard.
    */
-  def discard[E](elm: E)(implicit EtoBytes: E => Array[Byte]) = {
-    createHashes(EtoBytes(elm), k).foreach(filter(_) -= 1)
+  def discard[E <% Array[Byte]](elm: E) = {
+    createHashes(implicitly(elm), k).foreach(filter(_) -= 1)
     numberOfContains -= 1
   }
 
@@ -57,15 +57,15 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * discard all given elements from the filter.
    * @param elms is a set of elements you want to discard.
    */
-  def discardAll[E](elms: Set[E])(implicit EtoBytes: E => Array[Byte]) = elms.foreach(discard(_))
+  def discardAll[E <% Array[Byte]](elms: Set[E]) = elms.foreach(discard(_))
 
   /**
    * check whether the filter contains the given elements.
    * @param elm is an elements you want to check.
    * @return true: the elements contained, false: otherwise.
    */
-  def contains[E](elm: E)(implicit EtoBytes: E => Array[Byte]): Boolean = {
-    createHashes(EtoBytes(elm), k).map(filter(_) > 0).forall(_ == true)
+  def contains[E <% Array[Byte]](elm: E): Boolean = {
+    createHashes(implicitly(elm), k).map(filter(_) > 0).forall(_ == true)
   }
 
   /**
@@ -73,7 +73,7 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * @param elms is a set of elements you want to check.
    * @return true: all the elements contained, false: otherwise.
    */
-  def containsAll[E](elms: Set[E])(implicit EtoBytes: E => Array[Byte]): Boolean = {
+  def containsAll[E<% Array[Byte]](elms: Set[E]): Boolean = {
     elms.map(contains(_)).forall(_ == true)
   }
 
