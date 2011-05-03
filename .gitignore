@@ -15,11 +15,6 @@ dist
 # SpringSource Tool Suite
 .springBeans
 
-# Netbeans
-build
-dist
-private
-
 # IntelliJ IDEA
 *.iml
 *.ipr
