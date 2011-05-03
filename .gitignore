@@ -30,4 +30,6 @@ private
 # Simple Build Tool
 project/boot
 project/plugins/project
-
+lib_managed
+src_managed
+target
