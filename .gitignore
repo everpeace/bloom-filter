@@ -25,3 +25,9 @@ private
 *.ipr
 *.iws
 *.idea
+.idea
+
+# Simple Build Tool
+project/boot
+project/plugins/project
+
