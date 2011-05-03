@@ -34,8 +34,10 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * @param elm is an elements you want to add.
    */
   def add[E <% Array[Byte]](elm: E) = {
-    createHashes(implicitly(elm), k).foreach(filter(_) += 1)
-    numberOfContains += 1;
+    this.synchronized({
+      createHashes(implicitly(elm), k).foreach(filter(_) += 1)
+      numberOfContains += 1
+    })
   }
 
   /**
@@ -49,8 +51,10 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * @param elm is an elements you want to discard.
    */
   def discard[E <% Array[Byte]](elm: E) = {
-    createHashes(implicitly(elm), k).foreach(filter(_) -= 1)
-    numberOfContains -= 1
+    this.synchronized({
+      createHashes(implicitly(elm), k).foreach(filter(_) -= 1)
+      numberOfContains -= 1
+    })
   }
 
   /**
@@ -73,7 +77,7 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * @param elms is a set of elements you want to check.
    * @return true: all the elements contained, false: otherwise.
    */
-  def containsAll[E<% Array[Byte]](elms: Set[E]): Boolean = {
+  def containsAll[E <% Array[Byte]](elms: Set[E]): Boolean = {
     elms.map(contains(_)).forall(_ == true)
   }
 
