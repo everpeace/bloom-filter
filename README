@@ -1,7 +1,11 @@
 This ia an implementation of Bloom Filter, especially Counting Bloom Filter.
 
+What is Bloom Filter?:
+see http://en.wikipedia.org/wiki/Bloom_filter.
+
+
 How to build and run the sample:
-1. set up Simple Build Tool
+1. set up Simple Build Tool(http://code.google.com/p/simple-build-tool/)
 2. run sbt
 3. compile
 4. doc (optional)
@@ -12,7 +16,7 @@ Sample Scenario:
 0.initialize a CountingBloomFilter with max false positive probability is %1.7f and expected number of item is 26^4(about 4.5*10^5) 
 1.add all strings such that [a-z]^4 to the filter
 2.discard all strings such that a[a-z]^3 from the filter
-3.check that the filter contains each filter. 
+3.check that the filter contains each string. 
 4.outputs false positive results and average execution times. 
 
 
