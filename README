@@ -1,2 +1,67 @@
-This ia an implementation of Bloom Filter.
+This ia an implementation of Bloom Filter, especially Counting Bloom Filter.
 
+How to build and run the sample:
+1. set up Simple Build Tool
+2. run sbt
+3. compile
+4. doc (optional)
+5. run <false positive probability to set to the filter>
+
+
+Sample Scenario:
+0.initialize a CountingBloomFilter with max false positive probability is %1.7f and expected number of item is 26^4(about 4.5*10^5) 
+1.add all strings such that [a-z]^4 to the filter
+2.discard all strings such that a[a-z]^3 from the filter
+3.check that the filter contains each filter. 
+4.outputs false positive results and average execution times. 
+
+
+Sample Outputs:
+$sbt
+[info] Building project bloom-filter 1.0 against Scala 2.8.1
+[info]    using BloomFilterProject with sbt 0.7.5 and Scala 2.7.7
+> compile
+[info] 
+[info] == compile ==
+[info]   Source analysis: 0 new/modified, 0 indirectly invalidated, 0 removed.
+[info] Compiling main sources...
+[info] Nothing to compile.
+[info]   Post-analysis: 44 classes.
+[info] == compile ==
+[success] Successful.
+[info] 
+[info] Total time: 0 s, completed 2011/05/03 22:13:15
+> run 0.0001
+[info] 
+[info] == copy-resources ==
+[info] == copy-resources ==
+[info] 
+[info] == compile ==
+[info]   Source analysis: 0 new/modified, 0 indirectly invalidated, 0 removed.
+[info] Compiling main sources...
+[info] Nothing to compile.
+[info]   Post-analysis: 44 classes.
+[info] == compile ==
+[info] 
+[info] == run ==
+[info] Running org.everpeace.util.CountingBloomFilterSample 0.0001
+=========================================================================================================================================
+Test Senario:
+0.initialize a CountingBloomFilter with max false positive probability is 0.0001000 and expected number of item is 26^4(about 4.5*10^5)
+1.add all strings such that [a-z]^4 to the filter
+2.discard all strings such that a[a-z]^3 from the filter
+3.check that the filter contains each filter. (outputs only false positive results)
+-----------------------------------------------------------------------------------------------------------------------------------------
+[FilterInfo] filter-bit-size:9229878, number of hash:14, max false positive prob.: 0.0001000
+[Detected false positive results]
+abxc:true 
+[mesured false positive prob.] 0.0000022 (1 false positives found in 456976 trials)
+[average time for     add] 0.006[ms] (average for 456976 times trials)
+[average time for discard] 0.005[ms] (average for 17576 times trials)
+[average time for   check] 0.007[ms] (average for 456976 times trials)
+=========================================================================================================================================
+[info] == run ==
+[success] Successful.
+[info] 
+[info] Total time: 7 s, completed 2011/05/03 22:13:26
+> 
