@@ -93,6 +93,15 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
   def counts: Long = numberOfContains;
 
   /**
+   * reset the filter. (discard all elements)
+   */
+  def reset = {
+    this.synchronized({
+    filter = new Array[Int](size)
+    numberOfContains = 0
+    })
+  }
+  /**
    * create hash values (indices for increment counters)
    * each index is generated from 4-byte data(Int) split from hash value (byte array).
    */
