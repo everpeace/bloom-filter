@@ -1,14 +1,18 @@
 package org.everpeace.util
 
 import org.scalacheck.Gen
+import scala.math._
+import scalaz._
+import Scalaz._
 
 /**
  * Sample for CountingBloomFilter
  * @author everpeace _at_ gmail _dot_ com
  * @date 11/05/03
  */
-
 object CountingBloomFilterSample {
+
+  import CountingBloomFilter._
 
   /**
    * main.
@@ -22,7 +26,6 @@ object CountingBloomFilterSample {
    * run scenario.
    */
   private def Scenario(p: Double, n: Int) = {
-    import org.everpeace.util.CountingBloomFilter._
     System.out.println("=========================================================================================================================================")
     System.out.println("Sample Senario:")
     System.out.println("0.initialize a CountingBloomFilter with max false positive probability is %1.7f and expected number of items is %d" format (p, n))
@@ -41,7 +44,7 @@ object CountingBloomFilterSample {
     var addTimes: Long = 0
     val added = genStrings(2 * n)
     for (str <- added) {
-      addTime += executeTime(filter.add(str))
+      addTime += executeTime(str ++> filter)
       addTimes += 1
       if (addTimes % (2 * n / 10) == 0) System.out.print('.')
     }
@@ -53,7 +56,7 @@ object CountingBloomFilterSample {
     var discardTimes: Long = 0
     val discarded = added.slice(0, n) // first n strings
     for (str <- discarded) {
-      discardTime += executeTime(filter.discard(str))
+      discardTime += executeTime(str <-- filter)
       discardTimes += 1
       if (discardTimes % (n / 10) == 0) System.out.print('.')
     }
@@ -67,7 +70,7 @@ object CountingBloomFilterSample {
     System.out.println("[Detected false positive results]")
     for (str <- discarded) {
       var result: Boolean = false
-      checkTime += executeTime(result = filter.contains(str))
+      checkTime += executeTime(result = str ∈ filter)
       if (result) {
         System.out.print("%6s ".format(str, true))
         foundTimes += 1
@@ -106,19 +109,19 @@ object CountingBloomFilterSample {
 
   // generate num distinct random strings
   private def genStrings(num: Int): List[String] = {
+    val filter = CountingBloomFilter(pow(0.1, log10(num.toDouble * 10)), num)
     var added: Set[String] = Set.empty
     var numAdded = 0
     while (numAdded < num) {
-      sample.sample match {
-        case Some(s) => {
-          if (!added.contains(s)) {
-            added = added + s
-            numAdded += 1
-          }
-        }
-        case _ => {}
-      }
+      (sample.sample) |>| ((s: String) =>
+      // bloom filter reports no false negative, so we can trust the check.
+        if (!(s ∈ filter)) {
+          s ++> filter
+          added = added + s
+          numAdded += 1
+        })
     }
     added.toList
   }
+
 }

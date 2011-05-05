@@ -2,8 +2,12 @@ package org.everpeace.util
 
 import org.specs.{Specification, ScalaCheck}
 import org.scalacheck.Gen._
-import org.scalacheck.{Test, Prop, Gen}
 import org.scalacheck.Prop._
+import org.scalacheck.{Arbitrary, Test, Prop, Gen}
+import scala.math._
+
+import scalaz._
+import Scalaz._
 
 /**
  * CountingBloomFilterTest
@@ -16,8 +20,8 @@ class CountingBloomFilterTest extends Specification with ScalaCheck {
   import CountingBloomFilter._
 
   def countsNotChanged(filter: CountingBloomFilter) = forAll(sample)((s: String) => {
-    filter.add(s)
-    filter.discard(s)
+    s ++> filter
+    s <-- filter
     filter.counts == 0
   })
 
@@ -28,8 +32,8 @@ class CountingBloomFilterTest extends Specification with ScalaCheck {
 
   def NoFalsePositive(filter: CountingBloomFilter) =
     forAll(sample)(s => {
-      filter.add(s)
-      filter.contains(s)
+      s ++> filter
+      s ∈ filter
     })
 
   "No false negative results." in {
@@ -45,16 +49,14 @@ class CountingBloomFilterTest extends Specification with ScalaCheck {
 
     // add 2n distinct strings
     val added: List[String] = genStrings(2 * n)
-    for (str <- added) filter.add(str)
+    for (str <- added) str ++> filter
 
     // discard n distinct strings
-    val discarded = added.toList.slice(0, n)
-    for (str <- discarded) filter.discard(str)
+    val discarded: List[String] = added.toList.slice(0, n)
+    for (str <- discarded) str <-- filter
 
     // measure false positive prob. for discarded strings
-    val fpCount = (1 /: (discarded.map(filter.contains(_)))) {
-      (c: Int, b: Boolean) => if (b) c + 1 else c
-    }
+    val fpCount = (discarded ∘ ((s: String) => if (s ∈ filter) 1 else 0)).sum
 
     System.out.println("[mesured false positive prob.] %1.7f (%d false positives found in %d trials)".format(fpCount.toDouble / n, fpCount, n))
     (fpCount.toDouble / n) must lessThan(p)
@@ -68,18 +70,17 @@ class CountingBloomFilterTest extends Specification with ScalaCheck {
 
   // generate num distinct random strings
   private def genStrings(num: Int): List[String] = {
+    val filter = CountingBloomFilter(pow(0.1, log10(num.toDouble * 10)), num)
     var added: Set[String] = Set.empty
     var numAdded = 0
     while (numAdded < num) {
-      sample.sample match {
-        case Some(s) => {
-          if (!added.contains(s)) {
-            added = added + s
-            numAdded += 1
-          }
-        }
-        case _ => {}
-      }
+      (sample.sample) |>| ((s: String) =>
+      // bloom filter reports no false negative, so we can trust the check.
+        if (!(s ∈ filter)) {
+          s ++> filter
+          added = added + s
+          numAdded += 1
+        })
     }
     added.toList
   }

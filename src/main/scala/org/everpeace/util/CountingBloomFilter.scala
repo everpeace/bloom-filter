@@ -9,6 +9,9 @@ import scala.math.pow
 import java.security.MessageDigest
 import java.nio.charset.Charset
 
+import scalaz._
+import Scalaz._
+
 /**
  * Counting Bloom Filter
  *
@@ -33,9 +36,9 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * add an element from the filter.
    * @param elm is an elements you want to add.
    */
-  def add[E <% Array[Byte]](elm: E) = {
+  def add[E <% Array[Byte]](elm: E): Unit = {
     this.synchronized({
-      createHashes(implicitly(elm), k).foreach(filter(_) += 1)
+      createHashes(implicitly(elm), k) |>| ((c: Int) => filter(c) += 1)
       numberOfContains += 1
     })
   }
@@ -44,15 +47,18 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * add all given elements from the filter.
    * @param elms is a set of elements you want to add.
    */
-  def addAll[E <% Array[Byte]](elms: Set[E]) = elms.foreach(add(_))
+  def addAll[E <% Array[Byte]](elms: Set[E]): Unit = elms |>| (add(_))
 
   /**
    * discard an element from the filter.
    * @param elm is an elements you want to discard.
    */
-  def discard[E <% Array[Byte]](elm: E) = {
+  def discard[E <% Array[Byte]](elm: E): Unit = {
     this.synchronized({
-      createHashes(implicitly(elm), k).foreach(filter(_) -= 1)
+      createHashes(implicitly(elm), k) |>| ((c: Int) => {
+        filter(c) -= 1
+        if (filter(c) < 0) filter(c) = 0
+      })
       numberOfContains -= 1
     })
   }
@@ -61,7 +67,7 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * discard all given elements from the filter.
    * @param elms is a set of elements you want to discard.
    */
-  def discardAll[E <% Array[Byte]](elms: Set[E]) = elms.foreach(discard(_))
+  def discardAll[E <% Array[Byte]](elms: Set[E]): Unit = elms |>| (discard(_))
 
   /**
    * check whether the filter contains the given elements.
@@ -69,7 +75,7 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * @return true: the elements contained, false: otherwise.
    */
   def contains[E <% Array[Byte]](elm: E): Boolean = {
-    createHashes(implicitly(elm), k).map(filter(_) > 0).forall(_ == true)
+    createHashes(implicitly(elm), k) ∘ (filter(_) > 0) ∀ (_ == true)
   }
 
   /**
@@ -78,7 +84,7 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * @return true: all the elements contained, false: otherwise.
    */
   def containsAll[E <% Array[Byte]](elms: Set[E]): Boolean = {
-    elms.map(contains(_)).forall(_ == true)
+    elms ∘ (contains(_)) ∀ (_ == true)
   }
 
   /**
@@ -97,15 +103,16 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    */
   def reset = {
     this.synchronized({
-    filter = new Array[Int](size)
-    numberOfContains = 0
+      filter = new Array[Int](size)
+      numberOfContains = 0
     })
   }
+
   /**
    * create hash values (indices for increment counters)
    * each index is generated from 4-byte data(Int) split from hash value (byte array).
    */
-  private def createHashes(data: Array[Byte], hashes: Int): Array[Int] = {
+  private def createHashes(data: Array[Byte], hashes: Int): List[Int] = {
     val result = new Array[Int](hashes)
 
     var remainNum: Int = hashes
@@ -130,9 +137,24 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
       }
       remainNum -= createdNum
     }
-    val ret: Array[Int] = result.map(Int2Index(_)).toArray
+    val ret: List[Int] = result.toList ∘ (Int2Index(_))
     return ret
   }
+
+  /**
+   * alias for add
+   */
+  def <++[E <% Array[Byte]](e: E) = add(e)
+
+  /**
+   * alias for discard
+   */
+  def -->[E <% Array[Byte]](e: E) = discard(e)
+
+  /**
+   * alias in contains
+   */
+  def ∋[E <% Array[Byte]](e: E) = contains(e)
 
   /**
    * calculate Int value which is represented by bytes(i..i+3)
@@ -174,6 +196,8 @@ object CountingBloomFilter {
   /**Double to to Array[Byte] */
   implicit val DoubleToBytes: Double => Array[Byte] = (data: Double) => LongToBytes(java.lang.Double.doubleToLongBits(data))
 
+  implicit def VtoPimpedVal[V <% Array[Byte]](v: V) = new PimpedValForCountingBloomFilter(v)
+
   /**
    * factory for default constructor
    */
@@ -203,4 +227,41 @@ object CountingBloomFilter {
     val k = ceil(size.asInstanceOf[Double] / expectedElements * log(2.0d))
     new CountingBloomFilter(size, expectedElements, k.asInstanceOf[Int])
   }
+
+}
+
+/**
+ * Pimp for Counting Bloom Filter.
+ */
+class PimpedValForCountingBloomFilter[V <% Array[Byte]](val v: V) {
+
+  /**
+   * add to a given filter
+   */
+  def addTo(filter: CountingBloomFilter) = filter.add(v)
+
+  /**
+   * alias for addTo
+   */
+  def ++>(filter: CountingBloomFilter) = addTo(filter)
+
+  /**
+   * discard from a given filter
+   */
+  def discardFrom(filter: CountingBloomFilter) = filter.discard(v)
+
+  /**
+   * alias for discardFrom
+   */
+  def <--(filter: CountingBloomFilter) = discardFrom(filter)
+
+  /**
+   * check contains in a given filter
+   */
+  def containsIn(filter: CountingBloomFilter) = filter.contains(v)
+
+  /**
+   * alias for containsIn
+   */
+  def ∈(filter: CountingBloomFilter) = containsIn(filter)
 }
