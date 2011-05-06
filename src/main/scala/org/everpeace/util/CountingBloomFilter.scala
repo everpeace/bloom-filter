@@ -11,6 +11,7 @@ import java.nio.charset.Charset
 
 import scalaz._
 import Scalaz._
+import CustomScalaz._
 
 /**
  * Counting Bloom Filter
@@ -75,7 +76,7 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * @return true: the elements contained, false: otherwise.
    */
   def contains[E <% Array[Byte]](elm: E): Boolean = {
-    createHashes(implicitly(elm), k) ∘ (filter(_) > 0) ∀ (_ == true)
+    ∀(createHashes(implicitly(elm), k) ∘ (filter(_) > 0))(_ == true)
   }
 
   /**
@@ -84,7 +85,7 @@ class CountingBloomFilter(val size: Int, val expectedElements: Int, val k: Int) 
    * @return true: all the elements contained, false: otherwise.
    */
   def containsAll[E <% Array[Byte]](elms: Set[E]): Boolean = {
-    elms ∘ (contains(_)) ∀ (_ == true)
+    ∀(elms ∘ (contains(_)))(_ == true)
   }
 
   /**
@@ -264,4 +265,13 @@ class PimpedValForCountingBloomFilter[V <% Array[Byte]](val v: V) {
    * alias for containsIn
    */
   def ∈(filter: CountingBloomFilter) = containsIn(filter)
+}
+
+/**
+ *  Scalaz Custom Object
+ */
+object CustomScalaz{
+
+  def ∀[M[_],A](v:M[A])(p: A => Boolean)(implicit cnv:M[A]=>MA[M,A],r: Foldable[M])= implicitly[MA[M,A]](v).all(p)
+  def ♯[M[_],A](v:M[A])(implicit cnv:M[A]=>MA[M,A],r: Foldable[M]): Int = implicitly[MA[M,A]](v).count
 }

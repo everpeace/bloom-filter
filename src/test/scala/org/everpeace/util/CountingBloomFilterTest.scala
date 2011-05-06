@@ -8,6 +8,7 @@ import scala.math._
 
 import scalaz._
 import Scalaz._
+import CustomScalaz._
 
 /**
  * CountingBloomFilterTest
@@ -49,14 +50,14 @@ class CountingBloomFilterTest extends Specification with ScalaCheck {
 
     // add 2n distinct strings
     val added: List[String] = genStrings(2 * n)
-    for (str <- added) str ++> filter
+    added |>| ( _ ++> filter )
 
     // discard n distinct strings
     val discarded: List[String] = added.toList.slice(0, n)
-    for (str <- discarded) str <-- filter
+    discarded |>| (_ <-- filter)
 
     // measure false positive prob. for discarded strings
-    val fpCount = (discarded ∘ ((s: String) => if (s ∈ filter) 1 else 0)).sum
+    val fpCount = ♯(discarded.filter(_ ∈ filter))
 
     System.out.println("[mesured false positive prob.] %1.7f (%d false positives found in %d trials)".format(fpCount.toDouble / n, fpCount, n))
     (fpCount.toDouble / n) must lessThan(p)
